@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { Icon, Button } from 'semantic-ui-react';
@@ -14,6 +14,7 @@ import { EntryFormValues } from '../AddEntryModal/AddEntryForm';
 const PatientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [{ patientDetails }, dispatch] = useStateValue();
+  const [patientHasChanges, setPatientHasChanges] = useState(false);
   const patient = patientDetails[id];
 
   const [modalOpen, setModalOpen] = React.useState<boolean>(false);
@@ -39,6 +40,7 @@ const PatientDetailPage: React.FC = () => {
           : [newEntry],
       };
       dispatch(updatePatient(updatedPatient));
+      setPatientHasChanges(true);
       closeModal();
     } catch (e) {
       console.error(e.response.data);
@@ -46,7 +48,7 @@ const PatientDetailPage: React.FC = () => {
     }
   };
   React.useEffect(() => {
-    if (!patient) {
+    if (!patient || patientHasChanges) {
       const fetchPatientDetails = async () => {
         try {
           const { data: patientDetailsFromApi } = await axios.get<Patient>(
@@ -58,8 +60,9 @@ const PatientDetailPage: React.FC = () => {
         }
       };
       fetchPatientDetails();
+      setPatientHasChanges(false);
     }
-  }, [patient, id, dispatch]);
+  }, [patient, id, patientHasChanges, dispatch]);
 
   if (!patient) {
     return <div>Loading...</div>;

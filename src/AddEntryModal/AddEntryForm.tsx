@@ -4,21 +4,13 @@ import { Field, Formik, Form } from 'formik';
 
 import {
   TextField,
-  SelectField,
   NumberField,
   DiagnosisSelection,
   EntryOption,
   SelectEntryField,
 } from '../AddPatientModal/FormField';
-import {
-  EntryOptions,
-  HospitalEntry,
-  HealthCheckEntry,
-  OccupationalHealthcareEntry,
-  HealthCheckRating,
-} from '../types';
+import { HealthCheckRating } from '../types';
 import { useStateValue } from '../state';
-import EntryDetails from '../PatientDetailPage/EntryDetails';
 
 export type EntryFormValues = {
   type: string;
@@ -50,6 +42,8 @@ const entryTypeOptions: EntryOption[] = [
 
 const AddEntryForm: React.FC<Props> = ({ onSubmit, onCancel }) => {
   const [{ diagnoses }] = useStateValue();
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const [type, setType] = useState('Hospital');
 
   return (
     <Formik
@@ -63,6 +57,7 @@ const AddEntryForm: React.FC<Props> = ({ onSubmit, onCancel }) => {
           date: '',
           criteria: '',
         },
+        employerName: '',
         sickLeave: {
           startDate: '',
           endDate: '',
@@ -72,12 +67,14 @@ const AddEntryForm: React.FC<Props> = ({ onSubmit, onCancel }) => {
       onSubmit={onSubmit}
       validate={(values) => {
         const requiredError = 'Field is required';
+        const invalidDateFormat = 'Date format is invalid';
         const errors: { [field: string]: string } = {};
-        if (!values.type) {
-          errors.type = requiredError;
-        }
+        setType(values.type);
         if (!values.date) {
           errors.date = requiredError;
+        }
+        if (values.date && !values.date.match(dateRegex)) {
+          errors.date = invalidDateFormat;
         }
         if (!values.description) {
           errors.description = requiredError;
@@ -93,6 +90,30 @@ const AddEntryForm: React.FC<Props> = ({ onSubmit, onCancel }) => {
           (!values.discharge.date || !values.discharge.criteria)
         ) {
           errors.discharge = requiredError;
+        }
+        if (values.type === 'OccupationalHealthcare' && !values.employerName) {
+          errors.employerName = requiredError;
+        }
+        if (
+          values.type === 'Hospital' &&
+          values.discharge.date &&
+          !values.discharge.date.match(dateRegex)
+        ) {
+          errors['discharge.date'] = invalidDateFormat;
+        }
+        if (
+          values.type === 'OccupationalHealthcare' &&
+          values.sickLeave.startDate &&
+          !values.sickLeave.startDate.match(dateRegex)
+        ) {
+          errors['sickLeave.startDate'] = invalidDateFormat;
+        }
+        if (
+          values.type === 'OccupationalHealthcare' &&
+          values.sickLeave.endDate &&
+          !values.sickLeave.endDate.match(dateRegex)
+        ) {
+          errors['sickLeave.endDate'] = invalidDateFormat;
         }
         return errors;
       }}
@@ -128,37 +149,55 @@ const AddEntryForm: React.FC<Props> = ({ onSubmit, onCancel }) => {
               setFieldTouched={setFieldTouched}
               diagnoses={Object.values(diagnoses)}
             />
-            <Field
-              label='Discharge date'
-              placeholder='Discharge date'
-              name='discharge.date'
-              component={TextField}
-            />
-            <Field
-              label='Discharge criteria'
-              placeholder='Discharge criteria'
-              name='discharge.criteria'
-              component={TextField}
-            />
-            <Field
-              label='Sick leave start date'
-              placeholder='Sick leave start date'
-              name='sickLeave.startDate'
-              component={TextField}
-            />
-            <Field
-              label='Sickleave end date'
-              placeholder='Sickleave end date'
-              name='sickLeave.endDate'
-              component={TextField}
-            />
-            <Field
-              label='healthCheckRating'
-              name='healthCheckRating'
-              component={NumberField}
-              min={0}
-              max={3}
-            />
+            {type === 'Hospital' && (
+              <Field
+                label='Discharge date'
+                placeholder='Discharge date'
+                name='discharge.date'
+                component={TextField}
+              />
+            )}
+            {type === 'Hospital' && (
+              <Field
+                label='Discharge criteria'
+                placeholder='Discharge criteria'
+                name='discharge.criteria'
+                component={TextField}
+              />
+            )}
+            {type === 'OccupationalHealthcare' && (
+              <Field
+                label='Employer name'
+                placeholder='Employer name'
+                name='employerName'
+                component={TextField}
+              />
+            )}
+            {type === 'OccupationalHealthcare' && (
+              <Field
+                label='Sick leave start date'
+                placeholder='Sick leave start date'
+                name='sickLeave.startDate'
+                component={TextField}
+              />
+            )}
+            {type === 'OccupationalHealthcare' && (
+              <Field
+                label='Sickleave end date'
+                placeholder='Sickleave end date'
+                name='sickLeave.endDate'
+                component={TextField}
+              />
+            )}
+            {type === 'HealthCheck' && (
+              <Field
+                label='healthCheckRating'
+                name='healthCheckRating'
+                component={NumberField}
+                min={0}
+                max={3}
+              />
+            )}
             <Grid>
               <Grid.Column floated='left' width={5}>
                 <Button type='button' onClick={onCancel} color='red'>
